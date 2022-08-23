@@ -6,4 +6,4 @@ provisioner: kubernetes.io/azure-file
 parameters:
   location: westeurope
   skuName: Standard_GRS
-  storageAccount: honestgbackupsa001
+  storageAccount: backupstorage
