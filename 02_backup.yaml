@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-backup-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: backup-storage
+  resources:
+    requests:
+      storage: 20Gi
+---
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mariadb-snapshots
+spec:
+  schedule: "0 9 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: create-snapshot
+            image: mysql:5.7
+            imagePullPolicy: IfNotPresent
+            command: ["/bin/sh", "-c"]
+            args:
+                - echo starting;
+                  cd mysql_backup;
+                  DUMP_FILE_NAME="backupOn`date +%Y-%m-%d-%H-%M`.sql";
+                  mysqldump -h $HOST -P 3306 -u$UESR -p$PASSWORD $DB_NAME > $DUMP_FILE_NAME;
+                  echo done backup;
+
+            volumeMounts:
+            - mountPath: "/mysql_backup"
+              name: backup-volume
+          volumes:
+            - name: backup-volume
+              persistentVolumeClaim:
+                claimName: mysql-backup-pvc
+
+          restartPolicy: OnFailure
